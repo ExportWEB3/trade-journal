@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { Trade, TradeFormData, DashboardStats } from '../types';
 
-const API_BASE = '/api';
+// Base URL: prefer VITE_API_URL from env (production), fallback to relative '/api' for dev
+const rawApiUrl = import.meta.env.VITE_API_URL as string | undefined;
+const API_BASE = rawApiUrl ? `${rawApiUrl.replace(/\/$/, '')}/api` : '/api';
 
 const api = axios.create({
   baseURL: API_BASE,
