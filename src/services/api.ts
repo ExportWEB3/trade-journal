@@ -1,0 +1,71 @@
+import axios from 'axios';
+import { Trade, TradeFormData, DashboardStats } from '../types';
+
+const API_BASE = '/api';
+
+const api = axios.create({
+  baseURL: API_BASE,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Trades API
+export const tradesApi = {
+  getAll: async (params?: {
+    status?: string;
+    symbol?: string;
+    startDate?: string;
+    endDate?: string;
+    sort?: string;
+  }): Promise<Trade[]> => {
+    const { data } = await api.get('/trades', { params });
+    return data;
+  },
+
+  getById: async (id: string): Promise<Trade> => {
+    const { data } = await api.get(`/trades/${id}`);
+    return data;
+  },
+
+  create: async (trade: TradeFormData): Promise<Trade> => {
+    const { data } = await api.post('/trades', trade);
+    return data;
+  },
+
+  update: async (id: string, trade: Partial<TradeFormData>): Promise<Trade> => {
+    const { data } = await api.put(`/trades/${id}`, trade);
+    return data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/trades/${id}`);
+  },
+
+  getStats: async (): Promise<DashboardStats> => {
+    const { data } = await api.get('/trades/stats');
+    return data;
+  },
+
+  uploadScreenshots: async (id: string, files: FileList): Promise<Trade> => {
+    const formData = new FormData();
+    Array.from(files).forEach((file) => {
+      formData.append('screenshots', file);
+    });
+    const { data } = await api.post(`/trades/${id}/screenshots`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return data;
+  },
+
+  deleteScreenshot: async (id: string, screenshotPath: string): Promise<Trade> => {
+    const { data } = await api.delete(
+      `/trades/${id}/screenshots/${encodeURIComponent(screenshotPath)}`
+    );
+    return data;
+  },
+};
+
+export default api;
