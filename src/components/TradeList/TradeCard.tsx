@@ -58,9 +58,9 @@ const TradeCard = ({ trade }: TradeCardProps) => {
               <Image className="w-4 h-4 text-slate-400" />
             )}
           </div>
-          <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+          <div className="flex md:flex-row flex-col bg-blak md:items-center md:gap-3 text-sm text-slate-500 dark:text-slate-400">
             <span>{format(new Date(trade.entryDate), 'MMM d, yyyy')}</span>
-            <span>•</span>
+            <span className="hidden md:flex">•</span>
             <span>{trade.lotSize} lots</span>
           </div>
           {trade.tags.length > 0 && (
