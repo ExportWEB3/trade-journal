@@ -20,6 +20,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
+import { resolveUploadUrl } from '../../services/api';
 import { useTrade, useTradeActions } from '../../hooks/useTrades';
 import { LoadingSpinner, Button, Modal, Card } from '../UI';
 
@@ -97,6 +98,9 @@ const TradeDetail = () => {
       setTrade(updated);
     }
   };
+
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
 
   if (loading) {
     return <LoadingSpinner text="Loading trade..." />;
@@ -527,17 +531,20 @@ const TradeDetail = () => {
             {trade.screenshots.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
                 {trade.screenshots.map((screenshot, index) => (
-                  <div key={index} className="relative group aspect-video rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700">
-                    <img
-                      src={screenshot}
-                      alt={`Screenshot ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
+                  <div key={index} className="relative rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700">
+                    <button type="button" onClick={() => { setPreviewSrc(resolveUploadUrl(screenshot)); setPreviewOpen(true); }} className="w-full h-full p-0">
+                      <img
+                        src={resolveUploadUrl(screenshot)}
+                        alt={`Screenshot ${index + 1}`}
+                        className="w-full h-40 sm:h-48 object-contain bg-black"
+                      />
+                    </button>
                     <button
                       onClick={() => handleDeleteScreenshot(screenshot)}
-                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 dark:bg-slate-900/90 text-red-600 flex items-center justify-center"
+                      aria-label="Delete screenshot"
                     >
-                      <X className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 ))}
@@ -562,6 +569,13 @@ const TradeDetail = () => {
               <Camera className="w-5 h-5" />
               Add Screenshots
             </Button>
+            <Modal isOpen={previewOpen} onClose={() => setPreviewOpen(false)} title="Preview">
+              {previewSrc && (
+                <div className="w-full h-[60vh] flex items-center justify-center">
+                  <img src={previewSrc} alt="Preview" className="max-h-full max-w-full object-contain" />
+                </div>
+              )}
+            </Modal>
           </div>
         )}
       </Card>

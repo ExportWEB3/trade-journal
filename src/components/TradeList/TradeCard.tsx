@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { TrendingUp, TrendingDown, ChevronRight, Image } from 'lucide-react';
+import { resolveUploadUrl } from '../../services/api';
 import { Trade } from '../../types';
 
 interface TradeCardProps {
@@ -56,7 +57,7 @@ const TradeCard = ({ trade }: TradeCardProps) => {
             </span>
             {trade.screenshots.length > 0 && (
               <img
-                src={trade.screenshots[0]}
+                src={resolveUploadUrl(trade.screenshots[0])}
                 alt="screenshot"
                 className="w-6 h-6 rounded-md object-cover border border-slate-200 dark:border-slate-700"
               />

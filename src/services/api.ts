@@ -5,6 +5,30 @@ import { Trade, TradeFormData, DashboardStats } from '../types';
 const rawApiUrl = import.meta.env.VITE_API_URL as string | undefined;
 const API_BASE = rawApiUrl ? `${rawApiUrl.replace(/\/$/, '')}/api` : '/api';
 
+export const resolveUploadUrl = (uploadPath: string) => {
+  if (!uploadPath) return uploadPath;
+  // If it's already absolute, return as-is
+  if (/^https?:\/\//i.test(uploadPath)) return uploadPath;
+
+  // If we have a configured raw API origin, prefix it
+  if (rawApiUrl) return `${rawApiUrl.replace(/\/$/, '')}${uploadPath.startsWith('/') ? uploadPath : `/${uploadPath}`}`;
+
+  // Fallback: assume same origin (will work if backend is proxied or same host)
+  // Dev fallback: if running in dev on localhost, try backend on port 5000
+  try {
+    const isDev = import.meta.env.DEV;
+    const host = typeof window !== 'undefined' ? window.location.hostname : null;
+    if (isDev && host && (host === 'localhost' || host === '127.0.0.1')) {
+      const port = 5000;
+      return `${window.location.protocol}//${host}:${port}${uploadPath.startsWith('/') ? uploadPath : `/${uploadPath}`}`;
+    }
+  } catch (e) {
+    // ignore and fallthrough
+  }
+
+  return uploadPath;
+};
+
 const api = axios.create({
   baseURL: API_BASE,
   headers: {

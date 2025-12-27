@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ArrowLeft, TrendingUp, TrendingDown, X, Plus, Camera, Loader2, Sparkles } from 'lucide-react';
-import { Button } from '../UI';
+import { ArrowLeft, TrendingUp, TrendingDown, X, Plus, Camera, Loader2, Sparkles, Trash2 } from 'lucide-react';
+import { Button, Modal } from '../UI';
 import { useTradeActions } from '../../hooks/useTrades';
 import { TradeFormData } from '../../types';
 import { extractFromMT5Screenshot, MT5ExtractedData } from '../../utils/mt5Parser';
@@ -100,6 +100,14 @@ const TradeForm = () => {
       previewsRef.current = previewsRef.current.filter((p) => p !== removed.preview);
       return prev.filter((_, i) => i !== index);
     });
+  };
+
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+
+  const openPreview = (src: string) => {
+    setPreviewSrc(src);
+    setPreviewOpen(true);
   };
 
   useEffect(() => {
@@ -565,22 +573,37 @@ const TradeForm = () => {
           </div>
 
           {selectedScreenshots.length > 0 && (
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {selectedScreenshots.map((s, idx) => (
                 <div key={s.preview} className="relative rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800">
-                  <img src={s.preview} alt={`screenshot-${idx}`} className="w-full h-24 object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => openPreview(s.preview)}
+                    className="w-full h-full p-0"
+                    aria-label={`Open screenshot ${idx + 1}`}
+                  >
+                    <img src={s.preview} alt={`screenshot-${idx}`} className="w-full h-20 sm:h-24 object-contain bg-black" />
+                  </button>
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); handleRemoveSelectedScreenshot(idx); }}
-                    className="absolute top-1 right-1 bg-white/80 dark:bg-slate-900/80 rounded-full p-1 hover:opacity-90"
+                    className="absolute top-2 right-2 bg-white/90 dark:bg-slate-900/90 rounded-full p-1"
                     aria-label="Remove screenshot"
                   >
-                    <X className="w-3 h-3 text-slate-700 dark:text-slate-200" />
+                    <Trash2 className="w-4 h-4 text-red-600" />
                   </button>
                 </div>
               ))}
             </div>
           )}
+
+          <Modal isOpen={previewOpen} onClose={() => setPreviewOpen(false)} title="Preview">
+            {previewSrc && (
+              <div className="w-full h-[60vh] flex items-center justify-center">
+                <img src={previewSrc} alt="Preview" className="max-h-full max-w-full object-contain" />
+              </div>
+            )}
+          </Modal>
         </div>
         <div className="card p-5 space-y-4">
           <h3 className="font-semibold text-slate-900 dark:text-white">
