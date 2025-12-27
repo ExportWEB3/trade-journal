@@ -55,7 +55,11 @@ const TradeCard = ({ trade }: TradeCardProps) => {
               {trade.status === 'open' ? 'Open' : 'Closed'}
             </span>
             {trade.screenshots.length > 0 && (
-              <Image className="w-4 h-4 text-slate-400" />
+              <img
+                src={trade.screenshots[0]}
+                alt="screenshot"
+                className="w-6 h-6 rounded-md object-cover border border-slate-200 dark:border-slate-700"
+              />
             )}
           </div>
           <div className="flex md:flex-row flex-col bg-blak md:items-center md:gap-3 text-sm text-slate-500 dark:text-slate-400">

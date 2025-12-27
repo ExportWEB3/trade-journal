@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ArrowLeft, TrendingUp, TrendingDown, X, Plus, Camera, Loader2, Sparkles } from 'lucide-react';
@@ -12,7 +12,7 @@ const PRESET_TAGS = ['Scalp', 'Swing', 'Breakout', 'Reversal', 'Trend', 'News'];
 
 const TradeForm = () => {
   const navigate = useNavigate();
-  const { createTrade, loading } = useTradeActions();
+  const { createTrade, loading, uploadScreenshots } = useTradeActions();
 
   const [formData, setFormData] = useState<TradeFormData>({
     symbol: 'GBPUSD',
@@ -41,6 +41,10 @@ const TradeForm = () => {
   const [extractionProgress, setExtractionProgress] = useState(0);
   const [extractionError, setExtractionError] = useState<string | null>(null);
   const ocrFileInputRef = useRef<HTMLInputElement>(null);
+  const screenshotsInputRef = useRef<HTMLInputElement>(null);
+
+  const [selectedScreenshots, setSelectedScreenshots] = useState<Array<{ file: File; preview: string }>>([]);
+  const previewsRef = useRef<string[]>([]);
 
   const handleScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -69,6 +73,41 @@ const TradeForm = () => {
       }
     }
   };
+
+  const handleScreenshotsSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newFiles: Array<{ file: File; preview: string }> = Array.from(files).map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+
+    // store previews in ref for cleanup
+    previewsRef.current.push(...newFiles.map((f) => f.preview));
+
+    setSelectedScreenshots((prev) => [...prev, ...newFiles]);
+
+    // reset input so same file can be selected again if needed
+    if (screenshotsInputRef.current) screenshotsInputRef.current.value = '';
+  };
+
+  const handleRemoveSelectedScreenshot = (index: number) => {
+    setSelectedScreenshots((prev) => {
+      const removed = prev[index];
+      if (removed) URL.revokeObjectURL(removed.preview);
+      // remove preview from ref
+      previewsRef.current = previewsRef.current.filter((p) => p !== removed.preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  useEffect(() => {
+    return () => {
+      previewsRef.current.forEach((p) => URL.revokeObjectURL(p));
+      previewsRef.current = [];
+    };
+  }, []);
 
   const applyExtractedData = (data: MT5ExtractedData) => {
     setFormData((prev) => ({
@@ -140,6 +179,13 @@ const TradeForm = () => {
     
     const trade = await createTrade(dataToSubmit);
     if (trade) {
+      // If user selected screenshots during creation, upload them now
+      if (selectedScreenshots.length > 0 && uploadScreenshots) {
+        // convert File[] -> FileList via DataTransfer
+        const dt = new DataTransfer();
+        selectedScreenshots.forEach((s) => dt.items.add(s.file));
+        await uploadScreenshots(trade._id, dt.files);
+      }
       navigate(`/trades/${trade._id}`);
     }
   };
@@ -493,6 +539,49 @@ const TradeForm = () => {
         </div>
 
         {/* Tags */}
+        <div className="card p-5">
+          <label className="label">Screenshots</label>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">Add screenshots for this trade (you can add multiple).</p>
+
+          <input
+            type="file"
+            ref={screenshotsInputRef}
+            onChange={handleScreenshotsSelect}
+            accept="image/*"
+            multiple
+            className="hidden"
+          />
+
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              type="button"
+              onClick={() => screenshotsInputRef.current?.click()}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-medium text-sm"
+            >
+              <Camera className="w-4 h-4" />
+              Add Screenshots
+            </button>
+            <span className="text-sm text-slate-500 dark:text-slate-400">{selectedScreenshots.length} selected</span>
+          </div>
+
+          {selectedScreenshots.length > 0 && (
+            <div className="grid grid-cols-3 gap-2">
+              {selectedScreenshots.map((s, idx) => (
+                <div key={s.preview} className="relative rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800">
+                  <img src={s.preview} alt={`screenshot-${idx}`} className="w-full h-24 object-cover" />
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleRemoveSelectedScreenshot(idx); }}
+                    className="absolute top-1 right-1 bg-white/80 dark:bg-slate-900/80 rounded-full p-1 hover:opacity-90"
+                    aria-label="Remove screenshot"
+                  >
+                    <X className="w-3 h-3 text-slate-700 dark:text-slate-200" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         <div className="card p-5 space-y-4">
           <h3 className="font-semibold text-slate-900 dark:text-white">
             Tags
